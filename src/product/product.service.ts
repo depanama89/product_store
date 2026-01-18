@@ -18,7 +18,7 @@ export class ProductService {
     return `This action returns all product`;
   }
   async createProduct(data: any) {
-    const productExist = await this.prisma.product.findUnique({
+    const productExist = await this.prisma.product.findFirst({
       where: { name: data.name } as any,
     });
 
@@ -37,6 +37,13 @@ export class ProductService {
   async getOneProduct(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
+      include: {
+        productHasCotegory: {
+          include: {
+            category: true,
+          },
+        },
+      },
     });
     if (!product) {
       throw new NotFoundException("Il n'y a aucun produit avec cet id ");
@@ -44,6 +51,37 @@ export class ProductService {
 
     return product;
   }
+  async updateProduct(id: number, data: any) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: id },
+    });
+
+    if (!product) {
+      throw new BadRequestException(
+        "il n'y a aucun produit correspondant à cet ID",
+      );
+    }
+
+    return this.prisma.product.update({
+      where: { id: id },
+      data: data,
+    });
+  }
+
+  async deleteProduct(id: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new BadRequestException("Le produit n'existe pas ");
+    }
+
+    return this.prisma.product.delete({
+      where: { id },
+    });
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} product`;
   }
