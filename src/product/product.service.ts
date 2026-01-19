@@ -8,16 +8,19 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductDto } from './dto/product.dto';
 import { ProductCreateInput } from 'generated/prisma/models';
+import { QueryParamsDto } from 'src/utils/communsDto/queryParams.dto';
+import { SearchQueryParamsDto } from 'src/utils/communsDto/searchQueryParams.dto';
 
 @Injectable()
 export class ProductService {
   constructor(private readonly prisma: PrismaService) {}
   async create(dto: ProductDto) {
+    const { productCategories, ...productData } = dto;
     const createProduct = await this.prisma.product.create({
-      data: { ...dto },
+      data: { ...productData },
     });
 
-    for (const categoryItem of dto.productCategories) {
+    for (const categoryItem of productCategories) {
       const categoryId = Number(categoryItem);
       const categoryExists = await this.prisma.productCategory.findUnique({
         where: {
@@ -38,11 +41,43 @@ export class ProductService {
         },
       });
     }
+
+    return createProduct;
   }
 
-  findAll() {
-    return `This action returns all product`;
+  findAll(dto: QueryParamsDto) {
+    return this.prisma.product.findMany({
+      orderBy: {
+        name: 'asc',
+      },
+      skip: Number(dto.skip),
+      take: Number(dto.take),
+      include: {
+        productHasCotegory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
   }
+
+  search(dto: SearchQueryParamsDto) {
+    return this.prisma.product.findMany({
+      where: {
+        name: {
+          contains: dto.search,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+      skip: Number(dto.skip),
+      take: Number(dto.take),
+    });
+  }
+
   async createProduct(dto: ProductDto) {
     const productExist = await this.prisma.product.findFirst({
       where: { name: dto.name } as any,
@@ -57,8 +92,21 @@ export class ProductService {
     });
   }
 
-  async getAllProduct() {
-    return this.prisma.product.findMany();
+  async getAllProduct(dto: QueryParamsDto) {
+    return this.prisma.product.findMany({
+      orderBy: {
+        name: 'asc',
+      },
+      skip: Number(dto.skip),
+      take: Number(dto.take),
+      include: {
+        productHasCotegory: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
   }
   async getOneProduct(id: number) {
     const product = await this.prisma.product.findUnique({
