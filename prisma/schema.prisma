@@ -30,7 +30,7 @@ model Role {
 }
 
 model Product {
-  name               String               @unique
+  name               String               @unique @db.VarChar(60)
   description        String
   price              Decimal              @db.Decimal(10, 2)
   isAvailable        Boolean              @default(true)

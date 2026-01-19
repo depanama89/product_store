@@ -3,23 +3,49 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+// import { CreateProductDto } from './dto/create-product.dto';
+// import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ProductDto } from './dto/product.dto';
+import { ProductCreateInput } from 'generated/prisma/models';
 
 @Injectable()
 export class ProductService {
   constructor(private readonly prisma: PrismaService) {}
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+  async create(dto: ProductDto) {
+    const createProduct = await this.prisma.product.create({
+      data: { ...dto },
+    });
+
+    for (const categoryItem of dto.productCategories) {
+      const categoryId = Number(categoryItem);
+      const categoryExists = await this.prisma.productCategory.findUnique({
+        where: {
+          id: categoryId,
+        },
+      });
+
+      if (!categoryExists) {
+        throw new NotFoundException(
+          `Product Category with ID:${categoryId} not found`,
+        );
+      }
+
+      await this.prisma.productHasCategory.create({
+        data: {
+          productId: createProduct.id,
+          categoryId: categoryId,
+        },
+      });
+    }
   }
 
   findAll() {
     return `This action returns all product`;
   }
-  async createProduct(data: any) {
+  async createProduct(dto: ProductDto) {
     const productExist = await this.prisma.product.findFirst({
-      where: { name: data.name } as any,
+      where: { name: dto.name } as any,
     });
 
     if (productExist) {
@@ -27,7 +53,7 @@ export class ProductService {
     }
 
     return this.prisma.product.create({
-      data,
+      data: { ...dto },
     });
   }
 
@@ -51,42 +77,66 @@ export class ProductService {
 
     return product;
   }
-  async updateProduct(id: number, data: any) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: id },
+  async updateProduct(id: number, dto: ProductDto) {
+    // const product = await this.prisma.product.findUnique({
+    //   where: { id: id },
+    // });
+
+    // if (!product) {
+    //   throw new BadRequestException(
+    //     "il n'y a aucun produit correspondant à cet ID",
+    //   );
+    // }
+    await this.getOneProduct(id);
+
+    await this.prisma.productHasCategory.deleteMany({
+      where: {
+        productId: id,
+      },
     });
 
-    if (!product) {
-      throw new BadRequestException(
-        "il n'y a aucun produit correspondant à cet ID",
-      );
+    for (const categoryItem of dto.productCategories) {
+      const categoryId = Number(categoryItem);
+      const categoryExists = await this.prisma.productCategory.findUnique({
+        where: {
+          id: categoryId,
+        },
+      });
+
+      if (!categoryExists) {
+        throw new NotFoundException(
+          `Product Category with ID:${categoryId} not found`,
+        );
+      }
+      await this.prisma.productHasCategory.create({
+        data: {
+          productId: id,
+          categoryId: categoryId,
+        },
+      });
     }
 
     return this.prisma.product.update({
       where: { id: id },
-      data: data,
+      data: dto,
     });
   }
 
   async deleteProduct(id: number) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-    });
+    await this.getOneProduct(id);
 
-    if (!product) {
-      throw new BadRequestException("Le produit n'existe pas ");
-    }
+    await this.prisma.productHasCategory.deleteMany({
+      where: {
+        productId: id,
+      },
+    });
 
     return this.prisma.product.delete({
       where: { id },
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
-  }
-
-  update(id: number, updateProductDto: UpdateProductDto) {
+  update(id: number, dto: ProductDto) {
     return `This action updates a #${id} product`;
   }
 
