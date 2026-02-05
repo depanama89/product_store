@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ProductCategoryService } from './product-category.service';
 import { ProductCategoryDto } from './dto/productCategory.dto';
@@ -19,8 +20,8 @@ export class ProductCategoryController {
   ) {}
 
   @Post()
-  create(@Body() createProductCategoryDto: ProductCategoryDto) {
-    return this.productCategoryService.create(createProductCategoryDto);
+  create(@Body() dto: ProductCategoryDto) {
+    return this.productCategoryService.create(dto);
   }
 
   @Get()
@@ -29,16 +30,16 @@ export class ProductCategoryController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productCategoryService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.productCategoryService.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
-    @Body() updateProductCategoryDto: ProductCategoryDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ProductCategoryDto,
   ) {
-    return this.productCategoryService.update(+id, updateProductCategoryDto);
+    return this.productCategoryService.update(id, dto);
   }
 
   @Delete(':id')

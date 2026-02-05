@@ -31,20 +31,44 @@ export class ProductCategoryService {
       orderBy: {
         name: 'asc',
       },
-      skip: dto.skip,
-      take: dto.take,
+      skip: Number(dto.skip),
+      take: Number(dto.take),
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} productCategory`;
+  async findOne(id: number) {
+    const productCategory = await this.prisma.productCategory.findUnique({
+      where: { id },
+    });
+    if (!productCategory || !productCategory.id) {
+      throw new NotFoundException(`La categorie ${id} n'existe pas`);
+    }
+    return productCategory;
   }
 
-  update(id: number, dto: ProductCategoryDto) {
-    return `This action updates a #${id} productCategory`;
+  async update(id: number, dto: ProductCategoryDto) {
+    await this.findOne(id);
+
+    return this.prisma.productCategory.update({
+      where: { id },
+      data: {
+        ...dto,
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} productCategory`;
+  async remove(id: number) {
+    await this.findOne(id);
+
+    await this.prisma.productHasCategory.deleteMany({
+      where: {
+        productId: id,
+      },
+    });
+    return this.prisma.productCategory.delete({
+      where: {
+        id,
+      },
+    });
   }
 }
