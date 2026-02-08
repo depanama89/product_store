@@ -8,11 +8,13 @@ import {
   Delete,
   ParseIntPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ProductDto } from './dto/product.dto';
 import { QueryParamsDto } from 'src/utils/communsDto/queryParams.dto';
 import { SearchQueryParamsDto } from 'src/utils/communsDto/searchQueryParams.dto';
+import { AdminGuard, JwtGuard } from 'src/auth/guards';
 // import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('product')
@@ -23,7 +25,7 @@ export class ProductController {
   create(@Body() data: ProductDto) {
     return this.productService.create(data);
   }
-
+  @UseGuards(JwtGuard, AdminGuard)
   @Get('/all')
   getAllProduct(@Query() dto: QueryParamsDto) {
     return this.productService.getAllProduct(dto);
